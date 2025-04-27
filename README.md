@@ -27,9 +27,13 @@ Each component must be wired and configured properly for stable operation.
 
 
 ###<2. Command Action in the code>
+
 t	Tare (Zero Calibration)
+
 w	Weight Calibration (Input known weight after placing)
+
 a	Start continuous vibration
+
 b	Stop all vibrations and reset count
 
 
