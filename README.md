@@ -25,6 +25,7 @@ Each component must be wired and configured properly for stable operation.
 - HX711 Arduino Library
 - Adafruit DRV2605 Library
 
+---------------------------------------
 
 ###<2. Command Action in the code>
 
@@ -32,14 +33,17 @@ t	Tare (Zero Calibration)
 
 w	Weight Calibration (Input known weight after placing)
 
+ex. write "w1000" if there is 1kg part on the loadcell
+
 a	Start continuous vibration
 
 b	Stop all vibrations and reset count
 
+--------------------------------------
 
 ###<3.1 Instruction: how to connect>
 
-1). Cnnect the arduino to PC
+1) Connect the arduino to PC
 
 2) Open the arduino ino code and check the port, board for connection
 
@@ -48,6 +52,8 @@ b	Stop all vibrations and reset count
 4) Upload the Arduino code provided
 
 5) Then connection end.
+
+---------------------------------------
 
 ###<3.2 Instruction: how to use>
 
@@ -68,6 +74,7 @@ ex) if a known weight is 1kg, just put onthe loadcell and then write down on the
    - Press `b` to stop vibrations.
 then it show how many press you did. 
 
+---------------------------------------------
 
 ###<3.3 What you can change>
 - Threshold for counting : The current code is based on 2500g(2kg). Just change the number in the part that says (measured > 2500)
