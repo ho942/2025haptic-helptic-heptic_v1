@@ -10,10 +10,10 @@ HX711 scale;
 float calibration_factor = -7050.0;  // Initial calibration factor
 String inputString = "";
 bool waitingForWeightInput = false;
-bool vibrationActive = false;  // 상태 변수, 진동이 활성화된 상태인지 확인
+bool vibrationActive = false;  // State variable, check if vibration is enabled
 
-int count = 0;  // 측정 초과 횟수 카운트
-bool overThreshold = false;  // 중복 count 방지
+int count = 0;  // Measurement overrun count
+bool overThreshold = false;  // Avoid double counts
 
 // TCA9548A I2C address
 #define TCA_ADDR 0x70
@@ -85,7 +85,7 @@ void loop() {
       if (!overThreshold) {
         count++;
         overThreshold = true;
-        if (count > 20) {
+        if (count > 30) {
           Serial.println("c");
           count = 0;  // Reset count after printing "c"
         }
