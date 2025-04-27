@@ -34,13 +34,19 @@ b	Stop all vibrations and reset count
 
 
 ###<3.1 Instruction: how to connect>
+
 1). Cnnect the arduino to PC
+
 2) Open the arduino ino code and check the port, board for connection
+
 3) Please check whether your PC download the libaries <1.Required Libaries>
+
 4) Upload the Arduino code provided
+
 5) Then connection end.
 
 ###<3.2 Instruction: how to use>
+
 1)When you upload the code, then loadcell starts to sense so 
    - Press `t` to tare the scale. (for make zero)
 
