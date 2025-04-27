@@ -19,26 +19,28 @@ Each component must be wired and configured properly for stable operation.
 | 6  | LRA (Linear Resonant Actuator) | 2 | Vibrating motor |
 | 7  | Connecting wires       | -        | Jumper cables |
 
-<1. Required Libraries>
+## 3. Guide to operate
+
+###<1. Required Libraries>
 - HX711 Arduino Library
 - Adafruit DRV2605 Library
 
 
-<2. Command Action in the code>
+###<2. Command Action in the code>
 t	Tare (Zero Calibration)
 w	Weight Calibration (Input known weight after placing)
 a	Start continuous vibration
 b	Stop all vibrations and reset count
 
 
-<3.1 Instruction: how to connect>
+###<3.1 Instruction: how to connect>
 1). Cnnect the arduino to PC
 2) Open the arduino ino code and check the port, board for connection
 3) Please check whether your PC download the libaries <1.Required Libaries>
 4) Upload the Arduino code provided
-4) Then connection end.
+5) Then connection end.
 
-<3.2 Instruction: how to use>
+###<3.2 Instruction: how to use>
 1)When you upload the code, then loadcell starts to sense so 
    - Press `t` to tare the scale. (for make zero)
 
@@ -49,13 +51,14 @@ ex) if a known weight is 1kg, just put onthe loadcell and then write down on the
 3)For real demo, HMD with AI will detect the hand poster. When AI detect the correct hand poster, PC sends signal for hardware to start CPR. So it starts vibration. Like this, think of 'a' as a signal from PC, but in this code it is trigger by you.
    - Press `a` to start vibration feedback.
 
-4) After that, Pressing the CPR hardware for 30. When counts are over than 30, print "c" to Serial and immediately reset count to 0.
+4) After that, Pressing the CPR hardware for 30.
+   When counts are over than 30, print "c" to Serial and immediately reset count to 0.
 
 5) If you wanna stop, 
    - Press `b` to stop vibrations.
 then it show how many press you did. 
 
 
-<3.3 What you can change>
+###<3.3 What you can change>
 - Threshold for counting : The current code is based on 2500g(2kg). Just change the number in the part that says (measured > 2500)
-- "a","b","c" signal: If you wanna integrate hardware to PC, you can use other 'keyword' for starting vibration.
+- `a`,`b`,"c" signal: If you wanna integrate hardware to PC, you can use other 'keyword' for starting vibration.
