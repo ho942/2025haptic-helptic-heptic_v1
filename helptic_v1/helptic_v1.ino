@@ -8,9 +8,7 @@ const int SCK_PIN = 3;
 HX711 scale;
 
 float calibration_factor = -7050.0;  // Initial calibration factor
-String inputString = "";
-bool waitingForWeightInput = false;
-bool vibrationActive = false;  // State variable, check if vibration is enabled
+bool vibrationActive = false;  // State variable
 
 int count = 0;  // Measurement overrun count
 bool overThreshold = false;  // Avoid double counts
@@ -32,7 +30,7 @@ void setup() {
   scale.begin(DOUT_PIN, SCK_PIN);
   scale.set_gain(64); // Set default gain
 
-  scale.set_scale();
+  scale.set_scale(); // Initialize with no scale factor yet
 
   Wire.begin();
 
@@ -53,14 +51,13 @@ void setup() {
 
   Serial.println("====== HX711 2-Step Calibration ======");
   Serial.println("[t] -> Tare (Zero Calibration)");
-  Serial.println("[w] -> Weight Calibration (Input known weight after placing it)");
+  Serial.println("[w####] -> Weight Calibration (Input known weight after placing it)");
   Serial.println("[a] -> Start continuous vibration pattern");
   Serial.println("[b] -> Stop all vibrations");
   Serial.println("======================================");
 }
 
 void loop() {
-  // Continuously display the current measured value
   scale.set_scale(calibration_factor);
   scale.set_gain(64);
   float measured = scale.get_units(5);
@@ -74,20 +71,18 @@ void loop() {
 
   // Check if vibration should be active
   if (vibrationActive) {
-    // Start continuous vibration
     vibrationStrength = 255;  // Max strength
     if (measured >= 1000) {
-      vibrationStrength = map(measured, 1000, 50000, 0, 255);  // Increase vibration strength as weight increases
+      vibrationStrength = map(measured, 1000, 50000, 0, 255);
     }
 
-    // Count logic when over 2500g
     if (measured > 2500) {
       if (!overThreshold) {
         count++;
         overThreshold = true;
         if (count > 30) {
           Serial.println("c");
-          count = 0;  // Reset count after printing "c"
+          count = 0;
         }
       }
     } else {
@@ -95,15 +90,12 @@ void loop() {
     }
 
   } else {
-    // No vibration when inactive
     vibrationStrength = 0;
   }
 
-  // Adjust vibration pattern based on strength
   int pattern = map(vibrationStrength, 0, 255, 1, 3);
   int repeatDelay = map(vibrationStrength, 0, 255, 200, 50);
 
-  // Execute vibration on each DRV2605 device
   for (uint8_t i = 0; i < 2; i++) {
     tcaSelect(i);
 
@@ -123,57 +115,50 @@ void loop() {
     Serial.print(" and pattern: ");
     Serial.println(pattern);
 
-    delay(repeatDelay);  // Adjust delay based on vibration strength
+    delay(repeatDelay);
   }
 
   // Handle user input
   if (Serial.available()) {
-    char c = Serial.read();
+    String input = Serial.readStringUntil('\n');
+    input.trim();  // Remove whitespace
 
-    if (waitingForWeightInput) {
-      if (c == '\n' || c == '\r') {
-        float actualWeight = inputString.toFloat();
+    if (input.startsWith("w")) {
+      String weightStr = input.substring(1);
+      float actualWeight = weightStr.toFloat();
 
-        if (actualWeight > 0) {
-          float measuredWeight = scale.get_units(10);
-          calibration_factor = calibration_factor * (measuredWeight / actualWeight);
-          Serial.print("✔ Calibration complete. New factor: ");
-          Serial.println(calibration_factor);
-        } else {
-          Serial.println("✖ Invalid weight. Try again.");
-        }
-
-        inputString = "";
-        waitingForWeightInput = false;
+      if (actualWeight > 0) {
+        Serial.println("→ Calibrating with known weight: " + String(actualWeight) + " grams...");
+        float measuredWeight = scale.get_units(10);
+        calibration_factor = calibration_factor * (measuredWeight / actualWeight);
+        Serial.print("✔ Calibration complete. New factor: ");
+        Serial.println(calibration_factor);
       } else {
-        inputString += c;
+        Serial.println("✖ Invalid weight input after 'w'. Try again.");
       }
-    } else {
-      if (c == 't') {
-        Serial.println("→ Taring... Remove all weight.");
-        delay(2000);
-        scale.tare();
-        Serial.println("✔ Tare complete. Scale is zeroed.");
-      }
-      else if (c == 'w') {
-        Serial.println("→ Place known weight on the scale, then enter the weight in grams and press Enter.");
-        inputString = "";
-        waitingForWeightInput = true;
-      }
-      else if (c == 'a') {
-        vibrationActive = true;
-        count = 0;
-        Serial.println("→ Continuous vibration pattern started.");
-      }
-      else if (c == 'b') {
-        vibrationActive = false;
-        Serial.print("→ Vibration stopped. Count was: ");
-        Serial.println(count);
-        count = 0;
-        Serial.println("→ All vibrations stopped.");
-      }
+    }
+    else if (input == "t") {
+      Serial.println("→ Taring... Remove all weight.");
+      delay(2000);
+      scale.tare();
+      Serial.println("✔ Tare complete. Scale is zeroed.");
+    }
+    else if (input == "a") {
+      vibrationActive = true;
+      count = 0;
+      Serial.println("→ Continuous vibration pattern started.");
+    }
+    else if (input == "b") {
+      vibrationActive = false;
+      Serial.print("→ Vibration stopped. Count was: ");
+      Serial.println(count);
+      count = 0;
+      Serial.println("→ All vibrations stopped.");
+    }
+    else {
+      Serial.println("✖ Unknown command.");
     }
   }
 
-  delay(10);  // Loop delay
+  delay(10);  // Small loop delay
 }
