@@ -1,3 +1,31 @@
+/*
+  CPR Feedback System with Load Cell and Dual DRV2605 Haptic Drivers via TCA9548A I2C Multiplexer
+
+  Usage:
+  - Connect load cell to pins 2 (DOUT) and 3 (SCK).
+  - Connect two DRV2605 haptic drivers to I2C channels 0 and 1 on TCA9548A multiplexer at address 0x70.
+  - Bluetooth module connected to pins 10 (TX) and 11 (RX).
+  - Serial monitor baud rate: 9600.
+  
+  Commands via Serial or Bluetooth:
+  - "t" : Tare the load cell (set current load as zero reference).
+  - "w<value>" : Calibrate the scale with a known weight in grams (e.g., w1000 for 1000 grams).
+  - "a" : Start vibration feedback and counting when weight threshold is exceeded.
+  - "b" : Stop vibration feedback and print total count.
+  
+  Operation:
+  - Continuously reads load cell weight.
+  - When running, if weight exceeds threshold (~50000 raw), increments count and triggers vibration on both DRV2605 devices.
+  - Vibration intensity/delay varies depending on weight ranges.
+  - Outputs weight and count info on Serial Monitor.
+  
+  Notes:
+  - Adjust calibration_factor after calibration for accurate weight readings.
+  - Ensure correct wiring of TCA9548A and DRV2605 devices.
+  - Designed for CPR compression feedback or similar load-triggered haptic feedback applications.
+*/
+
+
 #include <Wire.h>
 #include "Adafruit_DRV2605.h"
 #include "HX711.h"
