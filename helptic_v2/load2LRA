@@ -1,0 +1,147 @@
+#include <Wire.h>
+#include "Adafruit_DRV2605.h"
+#include "HX711.h"
+#include <SoftwareSerial.h>
+
+#define LOADCELL_DOUT_PIN 2
+#define LOADCELL_SCK_PIN 3
+
+#define TCA_ADDR 0x70
+
+HX711 scale;
+SoftwareSerial BTSerial(10, 11); // 10=TX, 11=RX
+
+Adafruit_DRV2605 drv[2]; // 2 DRV2605
+
+float calibration_factor = 1.0;
+long zero_offset = 0;
+bool running = false;
+int count = 0;
+bool wasOverThreshold = false;
+
+void tcaSelect(uint8_t channel) {
+  if (channel > 7) return;
+  Wire.beginTransmission(TCA_ADDR);
+  Wire.write(1 << channel);
+  Wire.endTransmission();
+}
+
+void setupDRV2605(uint8_t drvIndex, uint8_t channel) {
+  tcaSelect(channel);
+  if (!drv[drvIndex].begin()) {
+    Serial.print("DRV2605 #");
+    Serial.print(drvIndex);
+    Serial.println(" not found");
+  }
+  drv[drvIndex].selectLibrary(1);
+  drv[drvIndex].useLRA();
+  drv[drvIndex].setMode(DRV2605_MODE_INTTRIG);
+  drv[drvIndex].setWaveform(0, 1); // pattern 1
+  drv[drvIndex].setWaveform(1, 0); // end
+}
+
+void triggerVibration() {
+  for (int i = 0; i < 2; i++) {
+    tcaSelect(i);
+    drv[i].go();
+  }
+}
+
+void stopVibration() {
+  for (int i = 0; i < 2; i++) {
+    tcaSelect(i);
+    drv[i].setWaveform(0, 0); // stop
+    drv[i].go();
+  }
+}
+
+void handleSerialInput(String input) {
+  input.trim();
+
+  if (input == "t") {
+    zero_offset = scale.read_average(10);
+    Serial.println("Tare completed.");
+  } 
+  else if (input.startsWith("w")) {
+    input.remove(0, 1);
+    float known_weight = input.toFloat();
+    if (known_weight != 0) {
+      long raw = -(scale.read_average(10) - zero_offset);
+      calibration_factor = (float)raw / known_weight;
+      Serial.print("Calibration complete. Factor: ");
+      Serial.println(calibration_factor);
+    } else {
+      Serial.println("Invalid calibration value.");
+    }
+  } 
+  else if (input == "a") {
+    count = 0;
+    running = true;
+    Serial.println("Vibration started.");
+  } 
+  else if (input == "b") {
+    running = false;
+    stopVibration();
+    Serial.print("Count: ");
+    Serial.println(count);
+    count = 0;
+  }
+}
+
+void setup() {
+  Serial.begin(9600);
+  BTSerial.begin(9600);
+  Wire.begin();
+
+  scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+  scale.set_scale();
+  scale.tare();
+
+  setupDRV2605(0, 0); // channel 0
+  setupDRV2605(1, 1); // channel 1
+
+  Serial.println("System ready.");
+}
+void loop() {
+
+  long reading = scale.read_average(1) - zero_offset;
+  reading = -reading;  
+  float weight = (float)reading / calibration_factor;
+
+  // print serial monitor (Serial Monitor)
+  Serial.print("Weight (kg): ");
+  Serial.println(weight);
+
+  // process serial input
+  while (Serial.available()) {
+    String s = Serial.readStringUntil('\n');
+    handleSerialInput(s);
+  }
+  while (BTSerial.available()) {
+    String s = BTSerial.readStringUntil('\n');
+    handleSerialInput(s);
+  }
+
+  if (running) {
+    // more than 50000 -> count check the timing
+    if (weight > 50000 && !wasOverThreshold) {
+      count++;
+          Serial.print("Count: ");
+          Serial.println(count); 
+      wasOverThreshold = true;
+    } 
+    else if (weight <= 50000) {
+      wasOverThreshold = false;
+    }
+
+    // calculate delay
+    int delayTime = 500; // basic delay
+    if (weight > 50000) delayTime = 10;
+    else if (weight > 30000) delayTime = 50;
+    else if (weight > 20000) delayTime = 100;
+    else if (weight > 10000) delayTime = 300;
+
+    triggerVibration();
+    delay(delayTime);
+  }
+}
